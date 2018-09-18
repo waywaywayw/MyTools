@@ -43,23 +43,16 @@ class MyFiles(object):
         for file in self._fin_files:
             yield os.path.join(self._fin_folder, file)
 
-    def file_name(self):
-        """
-        返回不带路径的文件名
-        :return:
-        """
+    def files_name_generator(self):
+        """返回不带路径的完整文件名 的generator"""
         for file in self._fin_files:
             yield file
 
-    def file_name_no_suffix(self):
-        """
-        返回不带路径不带文件后缀的文件名
-        :return:
-        """
-        for file in self._fin_files:
-            yield ''.join( file.split('.')[0:-1] )
+    def files_name(self):
+        """返回不带路径的完整文件名"""
+        return list(self._fin_files)
 
-    def fin_folder(self):
+    def folder_name(self):
         return self._fin_folder
 
 
@@ -137,3 +130,8 @@ class MyVocab(object):
         return self._id_to_word
 
 
+"""
+准备写：
+自动按比例分成训练集，验证集，测试集
+split
+"""
