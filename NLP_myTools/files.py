@@ -137,8 +137,3 @@ class MyVocab(object):
         return self._id_to_word
 
 
-"""
-准备写：
-自动按比例分成训练集，验证集，测试集
-split
-"""
