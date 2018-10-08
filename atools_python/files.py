@@ -5,6 +5,7 @@
 """
 
 import os
+import re
 import sys
 import logging
 
@@ -52,8 +53,33 @@ class MyFiles(object):
         """返回不带路径的完整文件名"""
         return list(self._fin_files)
 
+    def file_name_no_suffix(self):
+        """返回不带路径不带后缀的完整文件名"""
+        for file in self._fin_files:
+            yield '.'.join(file.split('.')[:-1])
+
     def folder_name(self):
         return self._fin_folder
+
+
+def legal_file_name(name):
+    """过滤掉不能做文件名的非法字符
+        """
+    # 1. / \ : * " < > | ？
+    re_token = re.compile('[/\\:*"<>|？?]')
+    name = re.sub(re_token, '', name)
+    return name
+
+
+def legal_folder_name(name):
+    """过滤掉不能做文件名的非法字符
+    """
+    # 1. / \ : * " < > | ？
+    name = legal_file_name(name)
+    # 2. window平台特有问题：文件夹名末尾不能是.
+    while name.endswith('.'):
+        name = name[:-1]
+    return name
 
 
 class MyVocab(object):
@@ -129,9 +155,3 @@ class MyVocab(object):
     def id_to_word(self):
         return self._id_to_word
 
-
-"""
-准备写：
-自动按比例分成训练集，验证集，测试集
-split
-"""
