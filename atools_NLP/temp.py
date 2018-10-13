@@ -2,6 +2,7 @@
 
 import re
 
+
 def format_print_han_list(l1, l2, space_num=12):
     re_han_cut_all = re.compile("[\u4E00-\u9FD5]", re.U)
 

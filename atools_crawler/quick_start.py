@@ -38,13 +38,12 @@ def main():
                 , 'User-Agent': get_random_UA()
     }
     params = {
-
     }
-
-    # 2. 发送请求并解析回复
+    # 2. 发送请求
     url = "http://www.baidu.com"
     # requests.get(url, headers=headers, proxies=proxies, params=params)
     response = requests.get(url, headers=headers)
+    # 3. 解析回复
     page_source = response.content.decode('utf8')
     # 将页面源代码写到临时html文件
     # with open('temp.html', 'r', encoding='utf8') as fout:

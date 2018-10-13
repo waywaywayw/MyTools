@@ -3,20 +3,23 @@
 @author: weijiawei
 @date: 2018-09-29
 """
-
 import re
+import pytest
 
 
-def dereplicate(elems):
-    """删除重复元素，保证元素顺序不变"""
-    ret_elems = []
-    for elem in elems:
-        if elem not in ret_elems:
-            ret_elems.append(elem)
+def dereplicate(elems, key=None):
+    """删除重复元素，并保证元素顺序不变。支持普通类型和特殊类型(dict)的list
+    """
+    if key is None: # 普通hash类型，比较简单
+        ret_elems = list(set(elems))
+        ret_elems.sort(key=elems.index)
+
+    else:   # 不可hash类型，比如dict类型
+        ret_elems = []  # 用于存储去重结果
+        duplicate_elems = set() # 用于判重
+        for elem in elems:
+            val = elem if key is None else key(elem)
+            if val not in duplicate_elems:
+                ret_elems.append(elem)
+                duplicate_elems.add(val)
     return ret_elems
-
-
-
-if __name__ == '__main__':
-    list1 = [1, 7, 8, 2, 4, 1, 5, 4, 8, 1, 7, 9, 4, 3]
-    print(dereplicate(list1))
