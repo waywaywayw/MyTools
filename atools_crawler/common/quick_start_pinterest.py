@@ -6,9 +6,10 @@
 
 import os
 import re
+import time
 import numpy as np
 import pandas as pd
-import requests
+import atools_crawler.requests
 from pprint import pprint
 from bs4 import BeautifulSoup
 
@@ -21,10 +22,18 @@ from atools_crawler.selenium.webdriver import MyWebDriver
 def selenium_main():
     driver = MyWebDriver(driver_type=2)
     # url = "http://www.baidu.com"
-    url = 'https://blog.csdn.net/ratsniper/article/details/78954852#class-names-%E7%B1%BB%E5%90%8D'
+    url = 'https://www.pinterest.com/percylee1817/machine/'
     driver.get(url)
-    driver.slide_down()
 
+    # while True:
+    for i in range(30):
+        soup = BeautifulSoup(driver.driver().page_source, 'html.parser')
+        # soup.findAll('div', {'class':'_uc _4h _ud'})
+        pic_cnt = len(soup.findAll('div', {'class':'Grid__Item'}))
+        print('找到的图片数：', pic_cnt)
+        driver.slide_down()
+        print('模拟下滑执行完毕')
+        time.sleep(1)
 
 def main():
     # 1. 设置请求参数
@@ -42,7 +51,7 @@ def main():
     # 2. 发送请求
     url = "http://www.baidu.com"
     # requests.get(url, headers=headers, proxies=proxies, params=params)
-    response = requests.get(url, headers=headers)
+    response = atools_crawler.requests.get(url, headers=headers)
     # 3. 解析回复
     page_source = response.content.decode('utf8')
     # 将页面源代码写到临时html文件
