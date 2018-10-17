@@ -62,6 +62,13 @@ class MyFiles(object):
         return self._fin_folder
 
 
+def readlines_from_file(input_path, encoding='utf8'):
+    ret_list = []
+    with open('while_list.txt', 'r', encoding=encoding) as fin:
+        for line in fin:
+            ret_list.append(line.strip())
+    return ret_list
+
 def legal_file_name(name):
     """过滤掉不能做文件名的非法字符
         """
