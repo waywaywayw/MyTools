@@ -8,6 +8,7 @@ import os
 import time
 import random
 import logging
+import platform
 from selenium import webdriver
 
 from atools_crawler.common.UserAgent import random_ua
@@ -41,7 +42,7 @@ class MyWebDriver(object):
         self._params = {'headless': True,
                         'images': False, 'js': True,
                         'ua': False, 'proxy': None,
-                        'local_config': False, 'profile_dir' : None}
+                        'local_user_dir': False}
         if params is not None:
             self._params.update(params)
 
@@ -74,29 +75,47 @@ class MyWebDriver(object):
         response = self._driver.get(url)
         return response
 
+    def try_get(self, url, n=3):
+        """如果get报错的话，多尝试访问几次"""
+        i = 0
+        while (i < n):
+            try:
+                response = self._driver.get(url)
+                return response
+            except Exception as e:
+                print('访问{}时报错：{}. 尝试再次访问'.format(url, e))
+                i += 1
+        raise ValueError('访问{}失败'.format(url))
+
     def Chrome(self):
         params = self._params
         # 开启配置项 chrome_options
         chrome_options = webdriver.ChromeOptions()
 
-        if params['headless']:    # 无头模式
+        if params['headless']:  # 无头模式
             chrome_options.add_argument('--headless')
-        if params['proxy'] is not None:       # 设置代理  未试用过？！
+        if params['proxy'] is not None:  # 设置代理  未试用过？！
             # chrome_options.add_argument("--proxy-server=http://127.0.0.1:10152")
             chrome_options.add_argument(params['proxy'])
-        if params['local_config']:
-            print("os.path.abspath(params['profile_dir']) = ", os.path.abspath(params['profile_dir']))
-            chrome_options.add_argument("user-data-dir=" + os.path.abspath(params['profile_dir']))
+        if params['local_user_dir']:  # 使用本地Chrome的用户数据（比如cookie）
+            sys_type = platform.system()    # 获取当前系统的类型
+            if sys_type != "Windows":
+                print('监测到当前系统不为windows，请自行填写profile_dir')
+                exit(1)
+            login_user = os.getlogin()  # 获取当前登录系统的用户名
+            profile_dir = r'C:\Users\{}\AppData\Local\Google\Chrome\User Data'.format(login_user)
+            print("预计本地Chrome浏览器的用户数据文件夹为：", profile_dir)
+            chrome_options.add_argument("user-data-dir=" + os.path.abspath(profile_dir))
 
         config_prefs = {}
         if not params['images']:  # 禁止加载图片
             config_prefs['images'] = 2
-        if not params['js']:      # 禁止加载javascript脚本
+        if not params['js']:  # 禁止加载javascript脚本
             config_prefs['javascript'] = 2
-        if params['ua']:          # 使用随机UA
+        if params['ua']:  # 使用随机UA
             config_prefs['User-Agent'] = random_ua()
         if config_prefs:
-            prefs = {'profile.default_content_setting_values' : config_prefs}
+            prefs = {'profile.default_content_setting_values': config_prefs}
             chrome_options.add_experimental_option("prefs", prefs)
         # prefs = {
         #     'profile.default_content_setting_values': {
@@ -113,7 +132,8 @@ class MyWebDriver(object):
                                   executable_path=self._executable_path)
         return driver
 
-    def login(self, login_url, username_elem, username, passwd_elem, passwd, login_button_elem, login_click_type=1, verbose=True):
+    def login(self, login_url, username_elem, username, passwd_elem, passwd, login_button_elem, login_click_type=1,
+              verbose=True):
         driver = self._driver
         if verbose:
             print('开始访问登录页面..')
@@ -122,9 +142,9 @@ class MyWebDriver(object):
             driver.find_element_by_css_selector(username_elem).send_keys(username)
             driver.find_element_by_css_selector(passwd_elem).send_keys(passwd)
 
-            if login_click_type==1: # 之前的做法1
+            if login_click_type == 1:  # 之前的做法1
                 driver.find_element_by_css_selector(login_button_elem).click()
-            elif login_click_type==2: # 之前的做法2
+            elif login_click_type == 2:  # 之前的做法2
                 button = driver.find_element_by_css_selector(login_button_elem)
                 driver.execute_script("$(arguments[0]).click()", button)
             else:
@@ -140,7 +160,7 @@ class MyWebDriver(object):
             print(e)
             print('登录时出现错误！是否访问网页失败 或者 参数有误？')
             exit(1)
-            
+
     def silde_down_until_stable(self, monitor_elem="", step_delay=0.2, until_num=-1, until_time=10, verbose=True):
         """
         不停模拟下滑页面，直到获取所有监控元素。
@@ -159,7 +179,7 @@ class MyWebDriver(object):
         while True:
             # 下滑一次，并休息约step_delay秒
             self.slide_down()
-            time.sleep(random.uniform(min(step_delay-0.1, 0.1), step_delay+0.1))
+            time.sleep(random.uniform(min(step_delay - 0.1, 0.1), step_delay + 0.1))
 
             # 找到监控元素
             elem_list = driver.find_elements_by_css_selector(monitor_elem)
@@ -169,12 +189,12 @@ class MyWebDriver(object):
                 logging.warning('扫描到的资源数量 : {}'.format(cur_len))
 
             # 测试是否满足跳出条件
-            if until_num >0:    # until_num模式（未完成）
+            if until_num > 0:  # until_num模式
                 pass
-            else:   # until_time模式（已完成）
+            else:  # until_time模式
                 if cur_len == pre_len:
                     # 如果值满足条件，就跳出循环
-                    if (time.time()-start_time) >= until_time:
+                    if (time.time() - start_time) >= until_time:
                         break
                 else:
                     # 重新开始统计一些值
@@ -205,9 +225,7 @@ class MyWebDriver(object):
         # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
 
     def page_to_file(self, output_path, encoding='utf8'):
-        """将浏览器的页面源代码保存到文件中。调试用。
-        """
-        if self._driver.page_source is None or self._driver.page_source=="":
+        if self._driver.page_source is None or self._driver.page_source == "":
             print('页面源代码为空白！')
             return
         with open(output_path, 'w', encoding=encoding) as fout:
@@ -215,8 +233,6 @@ class MyWebDriver(object):
             print('已写入文件:', output_path)
 
     def real_driver(self):
-        """返回原始的 webdriver。为了方便的调用 webdriver 原始的一些API
-        """
         return self._driver
 
     def PhantomJS(self):
@@ -254,3 +270,35 @@ class MyWebDriver(object):
                                    executable_path=self._executable_path)
         return driver
 
+
+# 要兼容老版本代码，所有没有删掉这个函数
+def PhantomJS():
+    # 引入配置对象DesiredCapabilities
+    from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+    dcap = dict(DesiredCapabilities.PHANTOMJS)
+    # 从USER_AGENTS列表中随机选一个浏览器头，伪装浏览器
+    ua = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'
+    dcap["phantomjs.page.settings.userAgent"] = ua
+    # 不载入图片，爬页面速度会快很多
+    dcap["phantomjs.page.settings.loadImages"] = False
+    # 设置代理
+    service_args = ['--proxy=127.0.0.1:4860', '--proxy-type=socks5']
+
+    # 打开带配置信息的phantomJS浏览器
+    PhantomJSPath = ''
+    driver = webdriver.PhantomJS(desired_capabilities=dcap)
+    # test driver
+    # driver.get('http://1212.ip138.com/ic.asp')
+    # print('1: ', driver.session_id)
+    # print('2: ', driver.page_source)
+    # print('3: ', driver.get_cookies())
+    # logging.info(driver.title)
+    driver.implicitly_wait(15)
+
+    # 设置10秒页面超时返回，类似于requests.get()的timeout选项，driver.get()没有timeout选项
+    #  以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+    driver.set_page_load_timeout(30)
+    # 设置10秒脚本超时时间
+    driver.set_script_timeout(20)
+
+    return driver
